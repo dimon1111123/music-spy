@@ -6,10 +6,13 @@ from fastapi.responses import FileResponse
 
 app = FastAPI()
 
+# Расширенные плейлисты
 PLAYLISTS = {
     "ru_hits": ["Баста", "Руки Вверх", "Звери", "Кино", "Меладзе", "Zivert", "Корж", "Агутин", "МакSим", "Жуки"],
     "pop_world": ["The Weeknd", "Dua Lipa", "Lady Gaga", "Rihanna", "Bruno Mars", "Billie Eilish", "Michael Jackson", "Madonna"],
-    "rock": ["Linkin Park", "Nirvana", "Queen", "Король и Шут", "Сплин", "Би-2", "Imagine Dragons", "Rammstein"]
+    "rock": ["Linkin Park", "Nirvana", "Queen", "Король и Шут", "Сплин", "Би-2", "Imagine Dragons", "Rammstein"],
+    "pop_90s": ["Руки Вверх", "Иванушки International", "Демо", "Краски", "Стрелки", "Виктор Цой", "На-На", "Руки Вверх"],
+    "soundtracks": ["Hans Zimmer", "Ennio Morricone", "Interstellar theme", "Daft Punk", "Harry Potter soundtrack", "Pirates of the Caribbean"]
 }
 
 QUESTIONS = [
