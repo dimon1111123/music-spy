@@ -73,7 +73,7 @@
     <!-- ЭКРАН 1: Вход -->
     <div id="screen-menu" class="screen active">
         <h1>🎧 Музыкальный Шпион</h1>
-        <p style="color: var(--muted)">У всех играет один трек, а у Шпиона — другой. Не спались!</p>
+        <p style="color: var(--muted)">Топ-хиты 25/26 года! У всех свой трек. Не спались!</p>
         <div class="card">
             <input type="text" id="player-name" placeholder="Твое имя">
             <button onclick="createRoom()">Создать комнату</button>
@@ -101,7 +101,8 @@
         <div id="host-controls" class="card" style="display:none;">
             <label style="color: var(--muted); font-size: 14px;">Выбери плейлист:</label>
             <select id="playlist-select" onchange="hapticSelect()">
-                <option value="ru_hits">Русские хиты</option>
+                <option value="ru_top_2025_2026">🔥 Русские Топ-Хиты '25-'26</option>
+                <option value="ru_hits">Русские хиты (Классика)</option>
                 <option value="pop_world">Мировые поп-хиты</option>
                 <option value="rock">Рок-классика</option>
                 <option value="pop_90s">Попса 90-х / 2000-х</option>
@@ -115,7 +116,7 @@
     <div id="screen-game" class="screen">
         <h2>Слушаем и обсуждаем</h2>
         <div class="vinyl"></div>
-        <p id="timer-text" style="font-size: 18px; font-weight: bold;">Идет прослушивание: 25 сек</p>
+        <p id="timer-text" style="font-size: 18px; font-weight: bold;">Идет прослушивание: 30 сек</p>
 
         <div class="secret-box"
              onmousedown="showRole(true)" onmouseup="showRole(false)"
@@ -335,7 +336,7 @@
             audioEl.src = data.track.preview_url;
             audioEl.play().catch(e => console.log("Audio play error:", e));
 
-            let sec = 25;
+            let sec = 30; // Вернули стандартные 30 секунд
             clearInterval(listenInterval);
             document.getElementById("timer-text").innerText = `Идет прослушивание: ${sec} сек`;
             listenInterval = setInterval(() => {
