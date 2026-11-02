@@ -6,38 +6,45 @@ from fastapi.responses import FileResponse
 
 app = FastAPI()
 
-# Огромные списки артистов для каждого плейлиста (гарантируют большой выбор из 50+ треков)
+# Плейлисты с точными мегахитами, которые знают абсолютно все
 PLAYLISTS = {
     "ru_top_2025_2026": [
-        "MACAN", "Instasamka", "ANIKV", "OG Buda", "Mayot", "Три Дня Дождя", "Aarne", 
-        "BUSHIDO ZHO", "Loqiemean", "Soda Luv", "Asti", "HammAli Navai", "Niletto", 
-        "Slava Marlow", "Gspd", "SQWOZ BAB", "Scally Milano", "Big Baby Tape", "Friendly Thug 52", 
-        "Heronwater", "Obladaet", "Kizaru", "Boulevard Depo", "Thomas Mraz", "Chernika", "Mnogoznaal"
+        "Instasamka За деньги да", "MACAN Asphalt 8", "MACAN IVORY", "ANIKV & Aarne Procedural", 
+        "OG Buda Бандит", "Mayot Море", "Три Дня Дождя Гори", "Aarne & Bushido Zho Heavy Metal", 
+        "Asti По барам", "HammAli & Navai Птичка", "Niletto Любимка", "Slava Marlow Ты горишь как огонь",
+        "Zivert Life", "Gayazovs Brothers По синей грусти", "Instasamka Lipsi Ha", "MACAN Дорога",
+        "Anna Asti Царица", "Jony Комета", "Xcho Raze", "Miyagi & Эндшпиль I Got Love", "Artik & Asti Девочка танцуй"
     ],
     "ru_hits": [
-        "Баста", "Руки Вверх", "Звери", "Кино", "Меладзе", "Zivert", "Корж", "Агутин", 
-        "МакSим", "Жуки", "Ленинград", "Сплин", "Би-2", "Мумий Тролль", "Жуки", "Градусы", 
-        "Дискотека Авария", "Иванушки International", "Чайф", "Смысловые Галлюцинации", "Любэ", "Земфира"
+        "Баста Сансара", "Руки Вверх Крошка моя", "Звери Районы-кварталы", "Кино Группа крови", 
+        "Меладзе Сэра", "Zivert Credo", "Корж Малый повзрослел", "Агутин На сиреневой луне", 
+        "МакSим Знаешь ли ты", "Жуки Батарейка", "Ленинград Экспонат", "Сплин Мое сердце", 
+        "Би-2 Полковнику никто не пишет", "Мумий Тролль Невеста", "Дискотека Авария Малинки", 
+        "Иванушки International Тополиный пух", "Чайф Оранжевое настроение", "Земфира Искала"
     ],
     "pop_world": [
-        "The Weeknd", "Dua Lipa", "Lady Gaga", "Rihanna", "Bruno Mars", "Billie Eilish", 
-        "Michael Jackson", "Madonna", "Ed Sheeran", "Justin Bieber", "Ariana Grande", 
-        "Taylor Swift", "Miley Cyrus", "Katy Perry", "Sam Smith", "Harry Styles", "Post Malone", "Shawn Mendes"
+        "The Weeknd Blinding Lights", "Dua Lipa Levitating", "Lady Gaga Bad Romance", 
+        "Rihanna Umbrella", "Bruno Mars Uptown Funk", "Billie Eilish Bad Guy", 
+        "Michael Jackson Billie Jean", "Madonna Hung Up", "Ed Sheeran Shape of You", 
+        "Justin Bieber Baby", "Ariana Grande 7 rings", "Taylor Swift Blank Space", 
+        "Miley Cyrus Flowers", "Katy Perry Roar", "Harry Styles As It Was", "Post Malone Sunflower"
     ],
     "rock": [
-        "Linkin Park", "Nirvana", "Queen", "Король и Шут", "Сплин", "Би-2", "Imagine Dragons", 
-        "Rammstein", "AC DC", "Metallica", "Scorpions", "Muse", "Green Day", "Red Hot Chili Peppers", 
-        "The Offspring", "Blur", "System of a Down", "Limp Bizkit", "Three Days Grace"
+        "Linkin Park In the End", "Nirvana Smells Like Teen Spirit", "Queen Bohemian Rhapsody", 
+        "Король и Шут Прыгну со скалы", "Сплин Выхода нет", "Би-2 Варвара", "Imagine Dragons Radioactive", 
+        "Rammstein Du Hast", "AC DC Back in Black", "Metallica Enter Sandman", "Scorpions Wind of Change", 
+        "Muse Supermassive Black Hole", "Green Day American Idiot", "Red Hot Chili Peppers Californication"
     ],
     "pop_90s": [
-        "Руки Вверх", "Иванушки International", "Демо", "Краски", "Стрелки", "Виктор Цой", 
-        "На-Na", "Кар Мен", "Руки Вверх", "Линда", "Гости из Будущего", "Отпетые Мошенники", 
-        "Дискотека Авария", "Вирус", "Пропаганда", "Тату", "Света", "Шура", "Андрей Губин"
+        "Руки Вверх 18 мне уже", "Иванушки International Кукла", "Демо Солнышко", "Краски Он не знал", 
+        "Стрелки На вечеринке", "Виктор Цой Пачка сигарет", "На-На Фаина", "Кар Мен Лондон гуд бай", 
+        "Линда Ворона", "Гости из Будущего Беги от меня", "Отпетые Мошенники Люби меня люби", 
+        "Вирус Ты меня не ищи", "Пропаганда Мелом", "Тату Нас не догонят", "Шура Холодная луна", "Андрей Губин Мальчик-бродяга"
     ],
     "soundtracks": [
-        "Hans Zimmer", "Ennio Morricone", "Interstellar theme", "Daft Punk", "Harry Potter soundtrack", 
-        "Pirates of the Caribbean", "Lord of the Rings soundtrack", "Gladiator soundtrack", 
-        "Cillian Murphy", "Cyberpunk 2077 radio", "GTA Vice City radio", "Mortal Kombat theme"
+        "Hans Zimmer Interstellar", "Ennio Morricone Chi Mai", "Daft Punk Starboy", 
+        "Harry Potter Hedwig's Theme", "Pirates of the Caribbean He's a Pirate", 
+        "Lord of the Rings Concerning Hobbits", "Gladiator Now We Are Free", "Cypis Gdzie jest biały węgorz"
     ]
 }
 
@@ -51,51 +58,53 @@ QUESTIONS = [
 
 rooms = {}
 
-def generate_room_code():
-    return ''.join(random.choices(string.digits, k=4))
+# --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 
-async def fetch_tracks(playlist_key: str, count: int = 15):
+def generate_room_code() -> str:
+    """Генерирует уникальный 4-значный код комнаты."""
+    return "".join(random.choices(string.digits, k=4))
+
+async def fetch_tracks(playlist_key: str, count: int = 15) -> list:
+    """Загружает треки через iTunes API на основе выбранного плейлиста."""
     queries = PLAYLISTS.get(playlist_key, PLAYLISTS["ru_top_2025_2026"])
-    # Перемешиваем и берем больше запросов для максимального разнообразия
     selected_queries = random.sample(queries, min(len(queries), count))
     tracks = []
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         for q in selected_queries:
-            url = f"https://itunes.apple.com/search?term={q}&country=ru&entity=song&limit=25"
+            url = f"https://itunes.apple.com/search?term={q}&country=ru&entity=song&limit=5"
             try:
                 resp = await client.get(url)
                 data = resp.json()
                 results = [r for r in data.get("results", []) if r.get("previewUrl")]
                 if results:
-                    # Добавляем все найденные уникальные треки исполнителя
-                    for song in results:
-                        track_data = {
-                            "id": str(song["trackId"]),
-                            "title": f"{song['artistName']} — {song['trackName']}",
-                            "preview_url": song["previewUrl"],
-                            "artwork": song.get("artworkUrl100", "")
-                        }
-                        if track_data not in tracks:
-                            tracks.append(track_data)
+                    song = results[0]
+                    track_data = {
+                        "id": str(song["trackId"]),
+                        "title": f"{song['artistName']} — {song['trackName']}",
+                        "preview_url": song["previewUrl"],
+                        "artwork": song.get("artworkUrl100", "")
+                    }
+                    if track_data not in tracks:
+                        tracks.append(track_data)
             except Exception:
                 continue
     
-    # Перемешиваем весь итоговый пул из 50+ песен и берем случайные для раунда
     random.shuffle(tracks)
     return tracks
 
 async def broadcast(room_code: str, message: dict):
+    """Отправляет JSON-сообщение всем игрокам в комнате."""
     if room_code not in rooms:
         return
-    room = rooms[room_code]
-    for uid, player in list(room["players"].items()):
+    for player in rooms[room_code]["players"].values():
         try:
             await player["ws"].send_json(message)
         except Exception:
             pass
 
 async def broadcast_room_state(room_code: str):
+    """Рассылает актуальное состояние комнаты (игроки, очки, статусы)."""
     if room_code not in rooms:
         return
     room = rooms[room_code]
@@ -118,6 +127,8 @@ async def broadcast_room_state(room_code: str):
         "players": players_public
     })
 
+# --- МАРШРУТЫ И WEBSOCKET ---
+
 @app.get("/")
 async def get_index():
     return FileResponse("index.html")
@@ -132,6 +143,7 @@ async def websocket_endpoint(
 ):
     await websocket.accept()
 
+    # Создание новой комнаты
     if room_code == "CREATE":
         room_code = generate_room_code()
         while room_code in rooms:
@@ -154,6 +166,8 @@ async def websocket_endpoint(
 
     room = rooms[room_code]
     existing_score = room["players"][user_id]["score"] if user_id in room["players"] else 0
+    
+    # Добавление игрока
     room["players"][user_id] = {
         "ws": websocket,
         "name": user_name,
@@ -169,23 +183,25 @@ async def websocket_endpoint(
             data = await websocket.receive_json()
             action = data.get("action")
 
+            # Переключение готовности
             if action == "toggle_ready":
                 room["players"][user_id]["ready"] = True
                 await broadcast_room_state(room_code)
 
+            # Старт игры
             elif action == "start_game" and user_id == room["host_id"]:
                 if len(room["players"]) < 2:
                     await websocket.send_json({"type": "error", "message": "Нужно минимум 3 игрока (для теста от 2)!"})
                     continue
 
                 playlist = data.get("playlist", "ru_top_2025_2026")
-                tracks = await fetch_tracks(playlist, count=15)
+                tracks = await fetch_tracks(playlist, count=12)
                 if len(tracks) < 2:
                     await websocket.send_json({"type": "error", "message": "Ошибка загрузки музыки, попробуйте еще раз."})
                     continue
 
                 room["state"] = "listening"
-                room["track_options"] = tracks[:8] # Варианты для угадывания шпионом
+                room["track_options"] = tracks[:8]
                 
                 selected_two = random.sample(tracks, 2)
                 room["secret_track"] = selected_two[0]
@@ -204,10 +220,12 @@ async def websocket_endpoint(
                         "question": question
                     })
 
+            # Переход к голосованию
             elif action == "start_voting" and user_id == room["host_id"]:
                 room["state"] = "voting"
                 await broadcast(room_code, {"type": "voting_started"})
 
+            # Обработка голосов
             elif action == "vote":
                 target_id = data.get("target_id")
                 room["votes"][user_id] = target_id
@@ -216,6 +234,7 @@ async def websocket_endpoint(
                     vote_counts = {}
                     for v in room["votes"].values():
                         vote_counts[v] = vote_counts.get(v, 0) + 1
+                    
                     most_voted_id = max(vote_counts, key=vote_counts.get)
                     spy_id = room["spy_id"]
                     spy_name = room["players"][spy_id]["name"]
@@ -240,6 +259,7 @@ async def websocket_endpoint(
                             "secret_track": room["secret_track"]["title"]
                         })
 
+            # Попытка шпиона угадать трек
             elif action == "spy_guess_track" and user_id == room["spy_id"]:
                 guessed_id = data.get("track_id")
                 spy_id = room["spy_id"]
@@ -265,6 +285,7 @@ async def websocket_endpoint(
                     "secret_track": room["secret_track"]["title"]
                 })
 
+            # Возврат в лобби
             elif action == "back_to_lobby" and user_id == room["host_id"]:
                 room["state"] = "lobby"
                 for p in room["players"].values():
