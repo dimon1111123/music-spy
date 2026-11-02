@@ -1,1 +1,466 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Музыкальный Шпион</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #8b5cf6;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --tg-blue: #0ea5e9;
+            --gold: #f59e0b;
+        }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { margin: 0; padding: 16px; background: var(--bg); color: var(--text); text-align: center; user-select: none; }
+        .screen { display: none; max-width: 420px; margin: 0 auto; }
+        .screen.active { display: block; }
+        h1 { font-size: 24px; margin-bottom: 8px; }
+        .card { background: var(--card); border-radius: 16px; padding: 16px; margin: 12px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        button {
+            width: 100%; padding: 14px; border: none; border-radius: 12px;
+            background: var(--accent); color: white; font-size: 16px; font-weight: 600;
+            cursor: pointer; margin-top: 10px; transition: transform 0.1s, opacity 0.2s;
+        }
+        button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        button.secondary { background: #334155; }
+        button.success { background: var(--success); }
+        button.invite { background: var(--tg-blue); margin-top: 8px; }
+        button.rules-btn { background: #475569; margin-top: 8px; }
+        input, select {
+            width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #334155;
+            background: #0f172a; color: white; font-size: 16px; margin-top: 8px; text-align: center;
+        }
+        .player-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px; background: #0f172a; border-radius: 12px; margin: 8px 0;
+        }
+        .player-info { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+        .score-badge { background: rgba(245, 158, 11, 0.2); color: var(--gold); padding: 4px 8px; border-radius: 8px; font-weight: 700; font-size: 14px; }
+        .avatar {
+            width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+            background: var(--accent); color: white; display: inline-flex;
+            align-items: center; justify-content: center; font-weight: 700; font-size: 16px;
+            flex-shrink: 0; border: 2px solid #334155;
+        }
+        .vote-btn {
+            display: flex; align-items: center; gap: 12px; justify-content: flex-start;
+            padding: 12px 16px;
+        }
+        .vinyl {
+            width: 160px; height: 160px; border-radius: 50%; margin: 20px auto;
+            background: radial-gradient(circle, #8b5cf6 18%, #111 20%, #222 45%, #111 50%, #222 70%, #000 100%);
+            border: 4px solid #334155; animation: spin 3s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .secret-box {
+            padding: 16px; border: 2px dashed var(--accent); border-radius: 12px;
+            margin: 14px 0; cursor: pointer; background: rgba(139, 92, 246, 0.1);
+        }
+        .room-badge { font-size: 32px; font-weight: 800; letter-spacing: 4px; color: var(--accent); }
+        
+        /* Модальное окно правил */
+        #modal-rules {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-content {
+            background: var(--card); border-radius: 16px; padding: 20px; max-width: 380px; width: 100%;
+            text-align: left; max-height: 80vh; overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
 
+    <audio id="game-audio" playsinline></audio>
+
+    <!-- ЭКРАН 1: Вход -->
+    <div id="screen-menu" class="screen active">
+        <h1>🎧 Музыкальный Шпион</h1>
+        <p style="color: var(--muted)">У всех свой трек. Описывайте одним словом и не спалитесь!</p>
+        
+        <div class="card">
+            <input type="text" id="player-name" placeholder="Твое имя">
+            <button onclick="createRoom()">Создать комнату</button>
+        </div>
+        
+        <div class="card">
+            <input type="tel" id="join-code" placeholder="Код комнаты (4 цифры)" maxlength="4">
+            <button class="secondary" onclick="joinRoom()">Войти по коду</button>
+        </div>
+
+        <button class="rules-btn" onclick="toggleRules(true)">📖 Правила игры</button>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ПРАВИЛ -->
+    <div id="modal-rules">
+        <div class="modal-content">
+            <h3 style="margin-top:0; text-align:center;">📖 Правила игры</h3>
+            <p style="font-size: 14px; line-height: 1.5; color: var(--muted);">
+                <b>1. Суть:</b> У каждого мирного игрока в наушниках играет один и тот же трек, а у Шпиона — <i>другая</i> случайная песня из этого же плейлиста.<br><br>
+                <b>2. Прослушивание:</b> 30 секунд все слушают музыку в наушниках.<br><br>
+                <b>3. Обсуждение:</b> Когда музыка выключается, каждый игрок по очереди называет <b>строго одно слово</b>, ассоциирующееся с треком.<br><br>
+                <b>4. Голосование:</b> Игроки вычисляют, у кого была другая музыка, и голосуют за него.<br><br>
+                <b>5. Шпион:</b> Если шпиона поймали, у него есть шанс спастись — угадать настоящий трек мирных из списка и украсть победу! (+2 очка).
+            </p>
+            <button onclick="toggleRules(false)">Понятно</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН 2: Лобби -->
+    <div id="screen-lobby" class="screen">
+        <p style="margin:0; color: var(--muted)">Код комнаты:</p>
+        <div id="lobby-code" class="room-badge">----</div>
+
+        <button class="invite" onclick="inviteFriends()">📨 Пригласить друзей в чат</button>
+
+        <div class="card">
+            <h3 style="margin-top:0;">Игроки и очки:</h3>
+            <div id="players-list"></div>
+        </div>
+
+        <button id="btn-ready" class="success" onclick="unlockAudioAndReady()">🎧 Я в наушниках (Готов)</button>
+
+        <div id="host-controls" class="card" style="display:none;">
+            <label style="color: var(--muted); font-size: 14px;">Выбери плейлист:</label>
+            <select id="playlist-select" onchange="hapticSelect()">
+                <option value="ru_top_2025_2026">🔥 Русские Топ-Хиты '25-'26</option>
+                <option value="ru_hits">Русские хиты (Классика)</option>
+                <option value="pop_world">Мировые поп-хиты</option>
+                <option value="rock">Рок-классика</option>
+                <option value="pop_90s">Попса 90-х / 2000-х</option>
+                <option value="soundtracks">Саундтреки из фильмов</option>
+            </select>
+            <button id="btn-start" onclick="startGame()" disabled>Начать игру</button>
+        </div>
+    </div>
+
+    <!-- ЭКРАН 3: Прослушивание и обсуждение -->
+    <div id="screen-game" class="screen">
+        <h2>Слушаем и обсуждаем</h2>
+        <div class="vinyl"></div>
+        <p id="timer-text" style="font-size: 18px; font-weight: bold;">Идет прослушивание: 30 сек</p>
+
+        <div class="secret-box"
+             onmousedown="showRole(true)" onmouseup="showRole(false)"
+             ontouchstart="showRole(true)" ontouchend="showRole(false)">
+            <span id="role-hint">👆 Удерживай палец здесь, чтобы увидеть свою роль</span>
+            <div id="role-content" style="display:none; font-weight:bold; font-size:18px; white-space: pre-line;"></div>
+        </div>
+
+        <div class="card" style="background: rgba(139, 92, 246, 0.15); border: 1px solid var(--accent);">
+            <p style="color: var(--muted); margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Задание для круга:</p>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">🗣️ Опишите одним словом эту песню</div>
+        </div>
+
+        <button id="btn-to-vote" onclick="triggerVoting()" style="display:none;">Перейти к голосованию</button>
+    </div>
+
+    <!-- ЭКРАН 4: Голосование -->
+    <div id="screen-vote" class="screen">
+        <h2>Кто Шпион?</h2>
+        <p style="color: var(--muted)">Выбери игрока, у которого была другая музыка:</p>
+        <div id="vote-list" class="card"></div>
+    </div>
+
+    <!-- ЭКРАН 5: Последний шанс Шпиона -->
+    <div id="screen-spy-guess" class="screen">
+        <h2>🚨 Шпион пойман!</h2>
+        <p id="spy-caught-text" style="color: var(--muted)"></p>
+        <div id="spy-options" class="card"></div>
+    </div>
+
+    <!-- ЭКРАН 6: Результаты -->
+    <div id="screen-results" class="screen">
+        <h1 id="result-title"></h1>
+        <div class="card">
+            <p id="result-reason" style="font-size: 18px;"></p>
+            <hr style="border-color:#334155; margin: 14px 0;">
+            <p style="color: var(--muted); margin:0;">Загаданная песня мирных:</p>
+            <h3 id="result-track" style="color: var(--accent); margin-top: 6px;"></h3>
+        </div>
+        <button id="btn-restart" onclick="backToLobby()" style="display:none;">Сыграть еще раз</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const BOT_USERNAME = "";
+
+        function hapticImpact(style = "medium") {
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(style);
+        }
+        function hapticNotify(type = "success") {
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(type);
+        }
+        function hapticSelect() {
+            if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+        }
+
+        function toggleRules(show) {
+            hapticSelect();
+            document.getElementById("modal-rules").style.display = show ? "flex" : "none";
+        }
+
+        const user = tg.initDataUnsafe?.user || {
+            id: Math.floor(Math.random() * 900000) + 100000,
+            first_name: "Игрок " + Math.floor(Math.random() * 99),
+            photo_url: ""
+        };
+        document.getElementById("player-name").value = user.first_name;
+
+        let ws = null;
+        let myId = String(user.id);
+        let myPhoto = user.photo_url || "";
+        let currentRoomCode = "";
+        let isHost = false;
+        let currentRoleText = "";
+        let currentPlayers = [];
+        let listenInterval = null;
+        const audioEl = document.getElementById("game-audio");
+
+        function renderAvatarHTML(name, photoUrl) {
+            const initial = (name || "?").charAt(0).toUpperCase();
+            if (photoUrl) {
+                return `<img src="${photoUrl}" class="avatar" alt="${initial}" onerror="this.outerHTML='<div class=\\'avatar\\'>${initial}</div>'">`;
+            }
+            return `<div class="avatar">${initial}</div>`;
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+            document.getElementById(id).classList.add("active");
+        }
+
+        function connectWS(roomCode) {
+            hapticImpact("medium");
+            const name = encodeURIComponent(document.getElementById("player-name").value.trim() || "Игрок");
+            const photoParam = encodeURIComponent(myPhoto);
+            const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+            ws = new WebSocket(`${protocol}//${location.host}/ws/${roomCode}/${myId}/${name}?photo=${photoParam}`);
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+
+                if (data.type === "error") {
+                    hapticNotify("error");
+                    alert(data.message);
+                    showScreen("screen-menu");
+                }
+                else if (data.type === "room_state") {
+                    currentRoomCode = data.room_code;
+                    document.getElementById("lobby-code").innerText = data.room_code;
+                    isHost = (data.host_id === myId);
+                    currentPlayers = data.players;
+                    renderLobby(data.players);
+                    if (data.state === "lobby") showScreen("screen-lobby");
+                }
+                else if (data.type === "game_started") {
+                    handleGameStart(data);
+                }
+                else if (data.type === "voting_started") {
+                    hapticImpact("heavy");
+                    audioEl.pause();
+                    renderVoting();
+                    showScreen("screen-vote");
+                }
+                else if (data.type === "spy_caught") {
+                    hapticNotify("warning");
+                    renderSpyGuess(data);
+                    showScreen("screen-spy-guess");
+                }
+                else if (data.type === "game_over") {
+                    hapticNotify(data.winner === "spy" ? "warning" : "success");
+                    renderResults(data);
+                    showScreen("screen-results");
+                }
+            };
+        }
+
+        function createRoom() { connectWS("CREATE"); }
+
+        function joinRoom() {
+            const code = document.getElementById("join-code").value.trim();
+            if (code.length !== 4) {
+                hapticNotify("error");
+                return alert("Введите 4-значный код комнаты!");
+            }
+            connectWS(code);
+        }
+
+        function inviteFriends() {
+            hapticImpact("light");
+            const botLink = BOT_USERNAME
+                ? `https://t.me/${BOT_USERNAME}?startapp=${currentRoomCode}`
+                : location.origin;
+            const text = `🎧 Заходи играть в «Музыкального Шпиона»!\n🔑 Код комнаты: ${currentRoomCode}`;
+            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botLink)}&text=${encodeURIComponent(text)}`;
+
+            if (tg.openTelegramLink) {
+                tg.openTelegramLink(shareUrl);
+            } else {
+                navigator.clipboard.writeText(`Код комнаты: ${currentRoomCode}`);
+                alert(`Код комнаты ${currentRoomCode} скопирован!`);
+            }
+        }
+
+        function renderLobby(players) {
+            const list = document.getElementById("players-list");
+            list.innerHTML = "";
+            let allReady = true;
+
+            players.forEach(p => {
+                if (!p.ready) allReady = false;
+                const div = document.createElement("div");
+                div.className = "player-item";
+                div.innerHTML = `
+                    <div class="player-info">
+                        ${renderAvatarHTML(p.name, p.photo)}
+                        <span>${p.name} ${p.is_host ? "👑" : ""}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="score-badge">⭐ ${p.score || 0}</span>
+                        <span>${p.ready ? "✅" : "⏳"}</span>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+
+            document.getElementById("host-controls").style.display = isHost ? "block" : "none";
+            document.getElementById("btn-start").disabled = !(allReady && players.length >= 2);
+        }
+
+        function unlockAudioAndReady() {
+            hapticNotify("success");
+            audioEl.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+            audioEl.play().then(() => {
+                audioEl.pause();
+            }).catch(() => {});
+
+            document.getElementById("btn-ready").style.display = "none";
+            ws.send(JSON.stringify({ action: "toggle_ready" }));
+        }
+
+        function startGame() {
+            hapticImpact("heavy");
+            const playlist = document.getElementById("playlist-select").value;
+            ws.send(JSON.stringify({ action: "start_game", playlist }));
+        }
+
+        function handleGameStart(data) {
+            showScreen("screen-game");
+            document.getElementById("btn-to-vote").style.display = isHost ? "block" : "none";
+
+            if (data.is_spy) {
+                hapticNotify("warning");
+                currentRoleText = `🕵️‍♂️ ТЫ ШПИОН!\nУ тебя свой трек:\n${data.track.title}\n\nСлушай других и притворяйся, что слышишь то же самое!`;
+            } else {
+                hapticNotify("success");
+                currentRoleText = `🎵 Трек:\n${data.track.title}`;
+            }
+
+            audioEl.src = data.track.preview_url;
+            audioEl.play().catch(e => console.log("Audio play error:", e));
+
+            let sec = 30;
+            clearInterval(listenInterval);
+            document.getElementById("timer-text").innerText = `Идет прослушивание: ${sec} сек`;
+            listenInterval = setInterval(() => {
+                sec--;
+                if (sec > 0) {
+                    if (sec <= 5) hapticImpact("light");
+                    document.getElementById("timer-text").innerText = `Идет прослушивание: ${sec} сек`;
+                } else {
+                    clearInterval(listenInterval);
+                    hapticImpact("heavy");
+                    audioEl.pause();
+                    document.getElementById("timer-text").innerText = "🗣️ Время обсуждения! Называйте по одному слову.";
+                }
+            }, 1000);
+        }
+
+        function showRole(show) {
+            if (show) hapticImpact("light");
+            document.getElementById("role-hint").style.display = show ? "none" : "block";
+            const content = document.getElementById("role-content");
+            content.style.display = show ? "block" : "none";
+            content.innerText = currentRoleText;
+        }
+
+        function triggerVoting() {
+            hapticImpact("medium");
+            ws.send(JSON.stringify({ action: "start_voting" }));
+        }
+
+        function renderVoting() {
+            const list = document.getElementById("vote-list");
+            list.innerHTML = "";
+            currentPlayers.forEach(p => {
+                if (p.id === myId) return;
+                const btn = document.createElement("button");
+                btn.className = "secondary vote-btn";
+                btn.innerHTML = `
+                    ${renderAvatarHTML(p.name, p.photo)}
+                    <span>${p.name}</span>
+                `;
+                btn.onclick = () => {
+                    hapticSelect();
+                    ws.send(JSON.stringify({ action: "vote", target_id: p.id }));
+                    list.innerHTML = "<p>Голос принят! Ждем остальных игроков...</p>";
+                };
+                list.appendChild(btn);
+            });
+        }
+
+        function renderSpyGuess(data) {
+            const box = document.getElementById("spy-options");
+            box.innerHTML = "";
+            document.getElementById("spy-caught-text").innerText =
+                `Игроки вычислили Шпиона (${data.spy_name})! Но если он угадает настоящий трек мирных — он победит.`;
+
+            if (data.spy_id === myId) {
+                data.options.forEach(opt => {
+                    const btn = document.createElement("button");
+                    btn.className = "secondary";
+                    btn.innerText = opt.title;
+                    btn.onclick = () => {
+                        hapticImpact("heavy");
+                        ws.send(JSON.stringify({ action: "spy_guess_track", track_id: opt.id }));
+                    };
+                    box.appendChild(btn);
+                });
+            } else {
+                box.innerHTML = "<p>Ждем, пока Шпион пытается угадать трек...</p>";
+            }
+        }
+
+        function renderResults(data) {
+            document.getElementById("result-title").innerText =
+                data.winner === "spy" ? "🕵️‍♂️ Победа Шпиона!" : "🎉 Победа Мирных!";
+            document.getElementById("result-reason").innerText = data.reason;
+            document.getElementById("result-track").innerText = data.secret_track;
+            document.getElementById("btn-restart").style.display = isHost ? "block" : "none";
+            document.getElementById("btn-ready").style.display = "block";
+        }
+
+        function backToLobby() {
+            hapticImpact("medium");
+            ws.send(JSON.stringify({ action: "back_to_lobby" }));
+        }
+
+        const startParam = tg.initDataUnsafe?.start_param;
+        if (startParam && startParam.length === 4) {
+            document.getElementById("join-code").value = startParam;
+            connectWS(startParam);
+        }
+    </script>
+</body>
+</html>
