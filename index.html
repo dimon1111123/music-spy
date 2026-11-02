@@ -15,6 +15,7 @@
             --danger: #ef4444;
             --success: #22c55e;
             --tg-blue: #0ea5e9;
+            --gold: #f59e0b;
         }
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { margin: 0; padding: 16px; background: var(--bg); color: var(--text); text-align: center; user-select: none; }
@@ -41,6 +42,7 @@
             padding: 10px 14px; background: #0f172a; border-radius: 12px; margin: 8px 0;
         }
         .player-info { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+        .score-badge { background: rgba(245, 158, 11, 0.2); color: var(--gold); padding: 4px 8px; border-radius: 8px; font-weight: 700; font-size: 14px; }
         .avatar {
             width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
             background: var(--accent); color: white; display: inline-flex;
@@ -71,7 +73,7 @@
     <!-- ЭКРАН 1: Вход -->
     <div id="screen-menu" class="screen active">
         <h1>🎧 Музыкальный Шпион</h1>
-        <p style="color: var(--muted)">Надень наушники. У всех играет один трек, а у Шпиона — тишина!</p>
+        <p style="color: var(--muted)">У всех играет один трек, а у Шпиона — другой. Не спались!</p>
         <div class="card">
             <input type="text" id="player-name" placeholder="Твое имя">
             <button onclick="createRoom()">Создать комнату</button>
@@ -90,7 +92,7 @@
         <button class="invite" onclick="inviteFriends()">📨 Пригласить друзей в чат</button>
 
         <div class="card">
-            <h3 style="margin-top:0;">Игроки в комнате:</h3>
+            <h3 style="margin-top:0;">Игроки и очки:</h3>
             <div id="players-list"></div>
         </div>
 
@@ -133,7 +135,7 @@
     <!-- ЭКРАН 4: Голосование -->
     <div id="screen-vote" class="screen">
         <h2>Кто Шпион?</h2>
-        <p style="color: var(--muted)">Выбери игрока, у которого не играла музыка:</p>
+        <p style="color: var(--muted)">Выбери игрока, у которого была другая музыка:</p>
         <div id="vote-list" class="card"></div>
     </div>
 
@@ -150,7 +152,7 @@
         <div class="card">
             <p id="result-reason" style="font-size: 18px;"></p>
             <hr style="border-color:#334155; margin: 14px 0;">
-            <p style="color: var(--muted); margin:0;">Загаданная песня:</p>
+            <p style="color: var(--muted); margin:0;">Загаданная песня мирных:</p>
             <h3 id="result-track" style="color: var(--accent); margin-top: 6px;"></h3>
         </div>
         <button id="btn-restart" onclick="backToLobby()" style="display:none;">Сыграть еще раз</button>
@@ -288,7 +290,10 @@
                         ${renderAvatarHTML(p.name, p.photo)}
                         <span>${p.name} ${p.is_host ? "👑" : ""}</span>
                     </div>
-                    <span>${p.ready ? "✅ Готов" : "⏳ Ждем"}</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="score-badge">⭐ ${p.score || 0}</span>
+                        <span>${p.ready ? "✅" : "⏳"}</span>
+                    </div>
                 `;
                 list.appendChild(div);
             });
@@ -321,14 +326,14 @@
 
             if (data.is_spy) {
                 hapticNotify("warning");
-                currentRoleText = "🕵️‍♂️ ТЫ ШПИОН!\nУ тебя тишина. Слушай остальных и не выдай себя!";
-                audioEl.pause();
+                currentRoleText = `🕵️‍♂️ ТЫ ШПИОН!\nУ тебя свой трек:\n${data.track.title}\n\nСлушай других и притворяйся, что слышишь то же самое!`;
             } else {
                 hapticNotify("success");
                 currentRoleText = `🎵 Трек:\n${data.track.title}`;
-                audioEl.src = data.track.preview_url;
-                audioEl.play().catch(e => console.log("Audio play error:", e));
             }
+
+            audioEl.src = data.track.preview_url;
+            audioEl.play().catch(e => console.log("Audio play error:", e));
 
             let sec = 25;
             clearInterval(listenInterval);
@@ -384,7 +389,7 @@
             const box = document.getElementById("spy-options");
             box.innerHTML = "";
             document.getElementById("spy-caught-text").innerText =
-                `Игроки вычислили Шпиона (${data.spy_name})! Но если он угадает песню по вашему обсуждению — он победит.`;
+                `Игроки вычислили Шпиона (${data.spy_name})! Но если он угадает настоящий трек мирных — он победит.`;
 
             if (data.spy_id === myId) {
                 data.options.forEach(opt => {
