@@ -102,6 +102,8 @@
                 <option value="ru_hits">Русские хиты</option>
                 <option value="pop_world">Мировые поп-хиты</option>
                 <option value="rock">Рок-классика</option>
+                <option value="pop_90s">Попса 90-х / 2000-х</option>
+                <option value="soundtracks">Саундтреки из фильмов</option>
             </select>
             <button id="btn-start" onclick="startGame()" disabled>Начать игру</button>
         </div>
@@ -158,11 +160,8 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Впиши сюда юзернейм своего бота без @ (например: "MusicSpyParty_bot"),
-        // чтобы в приглашении отправлялась прямая ссылка на бота
         const BOT_USERNAME = "";
 
-        // Обертки для вибрации телефона (Telegram HapticFeedback API)
         function hapticImpact(style = "medium") {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(style);
         }
@@ -173,7 +172,6 @@
             if (tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
         }
 
-        // Данные игрока из Telegram
         const user = tg.initDataUnsafe?.user || {
             id: Math.floor(Math.random() * 900000) + 100000,
             first_name: "Игрок " + Math.floor(Math.random() * 99),
@@ -191,7 +189,6 @@
         let listenInterval = null;
         const audioEl = document.getElementById("game-audio");
 
-        // HTML-генератор аватарки (фото из Telegram или кружок с первой буквой имени)
         function renderAvatarHTML(name, photoUrl) {
             const initial = (name || "?").charAt(0).toUpperCase();
             if (photoUrl) {
@@ -261,7 +258,6 @@
             connectWS(code);
         }
 
-        // Кнопка "Пригласить друзей в чат" через Telegram API
         function inviteFriends() {
             hapticImpact("light");
             const botLink = BOT_USERNAME
@@ -340,7 +336,7 @@
             listenInterval = setInterval(() => {
                 sec--;
                 if (sec > 0) {
-                    if (sec <= 5) hapticImpact("light"); // Легкая вибрация на последних 5 секундах
+                    if (sec <= 5) hapticImpact("light");
                     document.getElementById("timer-text").innerText = `Идет прослушивание: ${sec} сек`;
                 } else {
                     clearInterval(listenInterval);
@@ -420,7 +416,6 @@
             ws.send(JSON.stringify({ action: "back_to_lobby" }));
         }
 
-        // Автоматический вход в комнату, если зашли по приглашению с параметром startapp
         const startParam = tg.initDataUnsafe?.start_param;
         if (startParam && startParam.length === 4) {
             document.getElementById("join-code").value = startParam;
